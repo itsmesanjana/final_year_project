@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Transaction History</title>
+    <script>
+        // Function to delete a transaction
+
+
+    function deleteTransaction(transactionId) {
+        fetch(`/delete_transaction/${transactionId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message === "Transaction deleted successfully.") {
+                // Remove the row from the table
+                document.getElementById(`transaction-${transactionId}`).remove();
+                alert(data.message);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+        // Function to delete all transactions
+        function deleteAllTransactions() {
+            if (confirm("Are you sure you want to delete all transactions?")) {
+                fetch('/delete_all_transactions', {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message === "All transactions deleted successfully.") {
+                        // Remove all transaction rows from the table
+                        const rows = document.querySelectorAll('tr[id^="transaction-"]');
+                        rows.forEach(row => row.remove());
+                        alert(data.message);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        }
+         // Function to fetch and update the pie chart data
+         function updateChartData() {
+            fetch('/get_chart_data')
+                .then(response => response.json())
+                .then(data => {
+                    const ctx = document.getElementById('pieChart').getContext('2d');
+                    if (pieChart) {
+                        pieChart.destroy(); // Destroy existing chart instance
+                    }
+                    pieChart = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: data.labels,
+                            datasets: [{
+                                label: 'Expense Categories',
+                                data: data.values,
+                                backgroundColor: [
+                                    'rgba(255, 99, 132, 0.2)',
+                                    'rgba(54, 162, 235, 0.2)',
+                                    'rgba(255, 206, 86, 0.2)',
+                                    'rgba(75, 192, 192, 0.2)',
+                                    'rgba(153, 102, 255, 0.2)',
+                                    'rgba(255, 159, 64, 0.2)'
+                                ],
+                                borderColor: [
+                                    'rgba(255, 99, 132, 1)',
+                                    'rgba(54, 162, 235, 1)',
+                                    'rgba(255, 206, 86, 1)',
+                                    'rgba(75, 192, 192, 1)',
+                                    'rgba(153, 102, 255, 1)',
+                                    'rgba(255, 159, 64, 1)'
+                                ],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Expenses Distribution by Category'
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching chart data:', error));
+        }
+
+        // Call updateChartData on page load to render the initial chart
+        window.onload = function() {
+            updateChartData();
+        };
+    </script>
+</head>
+<body>
+    
+    <h1>Transaction History</h1>
+    
+    <!-- Add the "Delete All" button here -->
+    <button onclick="deleteAllTransactions()">Delete All Transactions</button>
+    
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Type</th>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Date</th>
+            <th>Action</th>
+        </tr>
+        {% for transaction in transactions %}
+        <tr id="transaction-{{ transaction['id'] }}">
+            <td>{{ transaction['id'] }}</td>
+            <td>{{ transaction['type'] }}</td>
+            <td>{{ transaction['category'] }}</td>
+            <td>${{ transaction['amount'] }}</td>
+            <td>{{ transaction['date'] }}</td>
+            <td>
+                <button onclick="deleteTransaction({{ transaction['id'] }})">Delete</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>  
